@@ -1,0 +1,173 @@
+#!/usr/bin/python
+#+
+# Implementation of the XDG Base Directory specification
+# <http://standards.freedesktop.org/basedir-spec/latest/>.
+#
+# Created 2009 December 28 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+#-
+
+import sys
+import os
+import errno
+
+class xdg_base_dir :
+
+	@classmethod
+	def makedirsif(self, path) :
+		"""creates all the directories in path, if they don't already exist."""
+		try :
+			os.makedirs(path, 0700)
+		except OSError, (ErrNo, Msg) :
+			if ErrNo != errno.EEXIST :
+				raise
+			#end if
+		#end try
+	#end makedirsif
+
+	@classmethod
+	def get_config_home(self, makedirs = False) :
+		"""returns the directory for holding user-specific config files."""
+		result = os.environ.get("XDG_CONFIG_HOME")
+		if result == None :
+			result = os.path.join(os.environ["HOME"], ".config")
+		#end if
+		if makedirs :
+			self.makedirsif(result)
+		#end if
+		return result
+	#end get_config_home
+
+	@classmethod
+	def get_data_home(self, makedirs = False) :
+		"""returns the directory for holding user-specific data files."""
+		result = os.environ.get("XDG_DATA_HOME")
+		if result == None :
+			result = os.path.join(os.environ["HOME"], ".local/share")
+		#end if
+		if makedirs :
+			self.makedirsif(result)
+		#end if
+		return result
+	#end get_data_home
+
+	@classmethod
+	def get_cache_home(self, makedirs = False) :
+		"""returns the directory for holding user-specific cache files."""
+		result = os.environ.get("XDG_CACHE_HOME")
+		if result == None :
+			result = os.path.join(os.environ["HOME"], ".cache")
+		#end if
+		if makedirs :
+			self.makedirsif(result)
+		#end if
+		return result
+	#end get_cache_home
+
+	@classmethod
+	def config_search_path(self) :
+		"""returns the list of config directories to search (apart from the user area)."""
+		return os.environ.get("XDG_CONFIG_DIRS", "/etc").split(":")
+		  # note spec actually says default should be /etc/xdg
+	#end config_search_path
+
+	@classmethod
+	def data_search_path(self) :
+		"""returns the list of data directories to search (apart from the user area)."""
+		return os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+	#end data_search_path
+
+	@classmethod
+	def find_config_path(self, path, create_if = False) :
+		"""searches for path in all the config directory locations, returning the
+		expansion where it is found, or an expansion for creating it in the per-user
+		area if not found."""
+		paths_to_try = iter([self.get_config_home()] + self.config_search_path())
+			# highest priority first
+		while True :
+			try :
+				this_path = paths_to_try.next()
+			except StopIteration :
+				this_path = os.path.join(self.get_config_home(create_if), path)
+				if create_if :
+					self.makedirsif(this_path)
+				break
+			#end try
+			this_path = os.path.join(this_path, path)
+			if os.path.exists(this_path) :
+				break
+		#end while
+		return this_path
+	#end find_config_path
+
+	@classmethod
+	def find_data_path(self, path, create_if = False) :
+		"""searches for path in all the data directory locations, returning the
+		expansion where it is found, or an expansion for creating it in the per-user
+		area if not found."""
+		paths_to_try = iter([self.get_data_home()] + self.data_search_path())
+			# highest priority first
+		while True :
+			try :
+				this_path = paths_to_try.next()
+			except StopIteration :
+				this_path = os.path.join(self.get_data_home(create_if), path)
+				if create_if :
+					self.makedirsif(this_path)
+				#end if
+				break
+			#end try
+			this_path = os.path.join(this_path, path)
+			if os.path.exists(this_path) :
+				break
+		#end while
+		return this_path
+	#end find_data_path
+
+	@classmethod
+	def find_cache_path(self, path, create_if = False) :
+		"""returns an expansion for path in the cache directory area."""
+		result = os.path.join(self.get_cache_home(create_if), path)
+		if create_if :
+			self.makedirsif(result)
+		#end if
+		return result
+	#end find_cache_path
+
+#end xdg_base_dir
+
+#+
+# Test mainline
+#-
+
+if len(sys.argv) != 4 :
+	raise RuntimeError("usage: read|write config|data|cache path")
+#end if
+op = sys.argv[1]
+type = sys.argv[2]
+path = sys.argv[3]
+if op not in ("read", "write") :
+	raise RuntimeError("op must be read or write")
+#end if
+if type not in ("config", "data", "cache") :
+	raise RuntimeError("type must be config, data or cache")
+#end if
+if op == "read" :
+	if type == "config" :
+		result = xdg_base_dir.find_config_path(path)
+	elif type == "data" :
+		result = xdg_base_dir.find_data_path(path)
+	elif type == "cache" :
+		result = xdg_base_dir.find_cache_path(path)
+	#end if
+elif op == "write" :
+	if type == "config" :
+		result = os.path.join(xdg_base_dir.get_config_home(True), path)
+	elif type == "data" :
+		result = os.path.join(xdg_base_dir.get_data_home(True), path)
+	elif type == "cache" :
+		result = os.path.join(xdg_base_dir.get_cache_home(True), path)
+	#end if
+	xdg_base_dir.makedirsif(os.path.dirname(result))
+	open(result, "w").close()
+#end if
+sys.stdout.write(result + "\n")
