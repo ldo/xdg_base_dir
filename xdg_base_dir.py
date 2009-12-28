@@ -2,6 +2,23 @@
 # Implementation of the XDG Base Directory specification
 # <http://standards.freedesktop.org/basedir-spec/latest/>.
 #
+# The routines in this module can be grouped into the following categories:
+# * find all config/data files:
+#     find_all_config_path, find_all_data_path
+# * find highest-priority config/data file:
+#     find_first_config_path, find_first_data_path
+# * find location to create user-specific config/data/cache file:
+#     get_config_home, get_data_home, get_cache_home, find_cache_path
+# * utility:
+#     makedirsif
+#
+# Strategies for dealing with multiple configuration/data files are up to you.
+# Common strategies are:
+# 1) Look only at the highest-priority config or data file and ignore any others.
+# 2) Look at all config/data files, but process them in reverse order of priority
+#    and merge the results, so settings in later, higher-priority files override
+#    corresponding ones in earlier, lower-priority ones.
+#
 # Written by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 #-
 
@@ -57,28 +74,26 @@ def get_cache_home(makedirs = False) :
 
 def config_search_path() :
 	"""returns the list of config directories to search (apart from the user area)."""
-	return os.environ.get("XDG_CONFIG_DIRS", "/etc").split(":")
-	  # note spec actually says default should be /etc/xdg
+	return tuple(os.environ.get("XDG_CONFIG_DIRS", "/etc").split(":"))
+	  # note spec actually says default should be /etc/xdg, but /etc is the
+	  # conventional location for system config files.
 #end config_search_path
 
 def data_search_path() :
 	"""returns the list of data directories to search (apart from the user area)."""
-	return os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+	return tuple(os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"))
 #end data_search_path
 
-def find_config_path(path, create_if = False) :
-	"""searches for path in all the config directory locations, returning the
-	expansion where it is found, or an expansion for creating it in the per-user
-	area if not found."""
-	paths_to_try = iter([get_config_home()] + config_search_path())
+def find_first_config_path(path) :
+	"""searches for path in all the config directory locations in order of decreasing
+	priority, returning the expansion where it is first found, or None if not found."""
+	paths_to_try = iter((get_config_home(),) + config_search_path())
 		# highest priority first
 	while True :
 		try :
 			this_path = paths_to_try.next()
 		except StopIteration :
-			this_path = os.path.join(get_config_home(create_if), path)
-			if create_if :
-				makedirsif(this_path)
+			this_path = None
 			break
 		#end try
 		this_path = os.path.join(this_path, path)
@@ -86,22 +101,31 @@ def find_config_path(path, create_if = False) :
 			break
 	#end while
 	return this_path
-#end find_config_path
+#end find_first_config_path
 
-def find_data_path(path, create_if = False) :
-	"""searches for path in all the data directory locations, returning the
-	expansion where it is found, or an expansion for creating it in the per-user
-	area if not found."""
-	paths_to_try = iter([get_data_home()] + data_search_path())
+def find_all_config_path(path) :
+	"""searches for path in all the config directory locations, and returns a tuple
+	of all instances found in order of increasing priority."""
+	result = []
+	for this_path in (get_config_home(),) + config_search_path() :
+		this_path = os.path.join(this_path, path)
+		if os.path.exists(this_path) :
+			result.append(this_path)
+		#end if
+	#end for
+	return tuple(result)
+#end find_all_config_path
+
+def find_first_data_path(path) :
+	"""searches for path in all the data directory locations in order of decreasing
+	priority, returning the expansion where it is first found, or None if not found."""
+	paths_to_try = iter((get_data_home(),) + data_search_path())
 		# highest priority first
 	while True :
 		try :
 			this_path = paths_to_try.next()
 		except StopIteration :
-			this_path = os.path.join(get_data_home(create_if), path)
-			if create_if :
-				makedirsif(this_path)
-			#end if
+			this_path = None
 			break
 		#end try
 		this_path = os.path.join(this_path, path)
@@ -109,7 +133,20 @@ def find_data_path(path, create_if = False) :
 			break
 	#end while
 	return this_path
-#end find_data_path
+#end find_first_data_path
+
+def find_all_data_path(path) :
+	"""searches for path in all the data directory locations, and returns a tuple
+	of all instances found in order of increasing priority."""
+	result = []
+	for this_path in (get_data_home(),) + data_search_path() :
+		this_path = os.path.join(this_path, path)
+		if os.path.exists(this_path) :
+			result.append(this_path)
+		#end if
+	#end for
+	return tuple(result)
+#end find_all_data_path
 
 def find_cache_path(path, create_if = False) :
 	"""returns an expansion for path in the cache directory area."""

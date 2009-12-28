@@ -1,6 +1,15 @@
 #!/usr/bin/python
 #+
-# Test application for my xdg_base_dir library.
+# Test application for my xdg_base_dir library. Invoke this script as follows:
+#
+#     xdg_base_dir_try op pathtype path
+#
+# where op indicates the operation to perform, viz:
+#     read    -- find highest-priority existing file/dir path
+#     write   -- create user-specific file path
+#     findall -- find all existing file/dir paths
+# pathtype indicates what type of path we're dealing with (config, data or cache),
+# and path is the file/dir path string.
 #
 # Written by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 #-
@@ -10,34 +19,48 @@ import os
 import xdg_base_dir
 
 if len(sys.argv) != 4 :
-	raise RuntimeError("usage: read|write config|data|cache path")
+	raise RuntimeError("usage: read|write|findall config|data|cache path")
 #end if
 op = sys.argv[1]
-type = sys.argv[2]
+pathtype = sys.argv[2]
 path = sys.argv[3]
-if op not in ("read", "write") :
-	raise RuntimeError("op must be read or write")
+if op not in ("read", "write", "findall") :
+	raise RuntimeError("op must be read, write or findall")
 #end if
-if type not in ("config", "data", "cache") :
+if pathtype not in ("config", "data", "cache") :
 	raise RuntimeError("type must be config, data or cache")
 #end if
 if op == "read" :
-	if type == "config" :
-		result = xdg_base_dir.find_config_path(path)
-	elif type == "data" :
-		result = xdg_base_dir.find_data_path(path)
-	elif type == "cache" :
+	if pathtype == "config" :
+		result = xdg_base_dir.find_first_config_path(path)
+	elif pathtype == "data" :
+		result = xdg_base_dir.find_first_data_path(path)
+	elif pathtype == "cache" :
 		result = xdg_base_dir.find_cache_path(path)
 	#end if
+	if type(result) != str :
+		result = repr(result)
+	#end if
 elif op == "write" :
-	if type == "config" :
+	if pathtype == "config" :
 		result = os.path.join(xdg_base_dir.get_config_home(True), path)
-	elif type == "data" :
+	elif pathtype == "data" :
 		result = os.path.join(xdg_base_dir.get_data_home(True), path)
-	elif type == "cache" :
+	elif pathtype == "cache" :
 		result = os.path.join(xdg_base_dir.get_cache_home(True), path)
 	#end if
 	xdg_base_dir.makedirsif(os.path.dirname(result))
 	open(result, "w").close()
+elif op == "findall" :
+	if pathtype == "config" :
+		result = xdg_base_dir.find_all_config_path(path)
+	elif pathtype == "data" :
+		result = xdg_base_dir.find_all_data_path(path)
+	elif pathtype == "cache" :
+		result = xdg_base_dir.find_cache_path(path)
+	#end if
+	if type(result) == tuple :
+		result = repr(result)
+	#end if
 #end if
 sys.stdout.write(result + "\n")
