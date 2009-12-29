@@ -2,7 +2,7 @@
 #+
 # Test application for my xdg_base_dir library. Invoke this script as follows:
 #
-#     xdg_base_dir_try op pathtype path
+#     py_try op pathtype path
 #
 # where op indicates the operation to perform, viz:
 #     read    -- find highest-priority existing file/dir path
@@ -19,7 +19,7 @@ import os
 import xdg_base_dir
 
 if len(sys.argv) != 4 :
-	raise RuntimeError("usage: read|write|findall config|data|cache path")
+	raise RuntimeError("usage: %s read|write|findall config|data|cache path" % sys.argv[0])
 #end if
 op = sys.argv[1]
 pathtype = sys.argv[2]
