@@ -182,6 +182,7 @@ int main
 					status = 2;
 					break;
 				  } /*if*/
+				fprintf(stdout, "* %s\n", result);
 			  } /*if*/
 		  } /*if*/
 	  }
