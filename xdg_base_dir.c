@@ -331,7 +331,7 @@ static int xdg_for_each_found
 		  (
 			/*path =*/ (const unsigned char *)search_path,
 			/*path_len =*/ strlen(search_path),
-			/*action =*/ (xdg_path_component_action)try_component,
+			/*action =*/ try_component,
 			/*actionarg =*/ 0,
 			/*forwards =*/ forwards
 		  );
