@@ -2,6 +2,9 @@
 	Implementation of the XDG Base Directory specification
 	<http://standards.freedesktop.org/basedir-spec/latest/>.
 
+	Note the use of GNU/GCC-specific extensions: strchrnul, strndup
+	and local routine declarations.
+
 	Written by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 */	
 
@@ -16,7 +19,8 @@ int xdg_makedirsif
   (
 	const char * path
   )
-  /* creates all the directories in path, if they don't already exist. */
+  /* creates all the directories in path, if they don't already exist. Returns
+	nonzero and sets errno on error. */
   {
 	int status;
 	const char * pathrest;
@@ -203,7 +207,8 @@ int xdg_for_each_path_component
 	bool forwards /* false to do in reverse */
   )
   /* splits the string path with len path_len at any colon separators, calling
-	action for each component found, in forward or reverse order as specified. */
+	action for each component found, in forward or reverse order as specified.
+	Returns nonzero on error, or if action returned nonzero. */
   {
 	int status;
 	const unsigned char * const path_end = path + path_len;
@@ -318,13 +323,13 @@ static int xdg_for_each_found
 	  {
 		if (forwards)
 		  {
-			status = try_component(home_path, strlen(home_path), 0);
+			status = try_component((const unsigned char *)home_path, strlen(home_path), 0);
 			if (status != 0)
 				break;
 		  } /*if*/
 		status = xdg_for_each_path_component
 		  (
-			/*path =*/ search_path,
+			/*path =*/ (const unsigned char *)search_path,
 			/*path_len =*/ strlen(search_path),
 			/*action =*/ (xdg_path_component_action)try_component,
 			/*actionarg =*/ 0,
@@ -334,7 +339,7 @@ static int xdg_for_each_found
 			break;
 		if (!forwards)
 		  {
-			status = try_component(home_path, strlen(home_path), 0);
+			status = try_component((const unsigned char *)home_path, strlen(home_path), 0);
 			if (status != 0)
 				break;
 		  } /*if*/
@@ -351,6 +356,7 @@ static char * xdg_find_first_path
 	const char * itempath, /* assumed relative */
 	bool config /* true for config, false for data */
   )
+  /* common internal routine for both xdg_find_first_config_path and xdg_find_first_data_path. */
   {
 	char * result = 0;
 	errno = 0;
@@ -385,7 +391,8 @@ char * xdg_find_first_config_path
 	const char * itempath
   )
   /* searches for itempath in all the config directory locations in order of decreasing
-	priority, returning the expansion where it is first found, or NULL if not found. */
+	priority, returning the expansion where it is first found, or NULL if not found.
+	Caller must dispose of the result pointer. */
   {
 	return
 		xdg_find_first_path(itempath, true);
@@ -399,7 +406,8 @@ int xdg_find_all_config_path
 	bool forwards /* false to do in reverse */
   )
   /* searches for itempath in all the config directory locations, and invokes the
-	specified action for each instance found. */
+	specified action for each instance found. Returns nonzero on error, or if action
+	returned nonzero. */
   {
 	return
 		xdg_for_each_found
@@ -417,7 +425,8 @@ char * xdg_find_first_data_path
 	const char * itempath
   )
   /* searches for itempath in all the data directory locations in order of decreasing
-	priority, returning the expansion where it is first found, or NULL if not found. */
+	priority, returning the expansion where it is first found, or NULL if not found.
+	Caller must dispose of the result pointer. */
   {
 	return
 		xdg_find_first_path(itempath, false);
@@ -431,7 +440,8 @@ int xdg_find_all_data_path
 	bool forwards /* false to do in reverse */
   )
   /* searches for itempath in all the data directory locations, and invokes the
-	specified action for each instance found. */
+	specified action for each instance found. Returns nonzero on error, or if action
+	returned nonzero. */
   {
 	return
 		xdg_for_each_found
@@ -449,7 +459,8 @@ char * xdg_find_cache_path
 	const char * itempath,
 	bool create_if
   )
-  /* returns an expansion for itempath in the cache directory area. */
+  /* returns an expansion for itempath in the cache directory area. Caller must
+	dispose of the result pointer. */
   {
 	const char * const cache_home = xdg_get_cache_home(false);
 	char * result = 0;

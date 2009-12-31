@@ -29,7 +29,8 @@ int xdg_makedirsif
   (
 	const char * path
   );
-  /* creates all the directories in path, if they don't already exist. */
+  /* creates all the directories in path, if they don't already exist. Returns
+	nonzero and sets errno on error. */
 
 char * xdg_make_home_relative
   (
@@ -92,7 +93,8 @@ int xdg_for_each_path_component
 	bool forwards /* false to do in reverse */
   );
   /* splits the string path with len path_len at any colon separators, calling
-	action for each component found, in forward or reverse order as specified. */
+	action for each component found, in forward or reverse order as specified.
+	Returns nonzero on error, or if action returned nonzero. */
 
 typedef int (*xdg_item_path_action)
   (
@@ -106,7 +108,8 @@ char * xdg_find_first_config_path
 	const char * itempath
   );
   /* searches for itempath in all the config directory locations in order of decreasing
-	priority, returning the expansion where it is first found, or NULL if not found. */
+	priority, returning the expansion where it is first found, or NULL if not found.
+	Caller must dispose of the result pointer. */
 
 int xdg_find_all_config_path
   (
@@ -116,14 +119,16 @@ int xdg_find_all_config_path
 	bool forwards /* false to do in reverse */
   );
   /* searches for itempath in all the config directory locations, and invokes the
-	specified action for each instance found. */
+	specified action for each instance found. Returns nonzero on error, or if action
+	returned nonzero. */
 
 char * xdg_find_first_data_path
   (
 	const char * itempath
   );
   /* searches for itempath in all the data directory locations in order of decreasing
-	priority, returning the expansion where it is first found, or NULL if not found. */
+	priority, returning the expansion where it is first found, or NULL if not found.
+	Caller must dispose of the result pointer. */
 
 int xdg_find_all_data_path
   (
@@ -133,11 +138,13 @@ int xdg_find_all_data_path
 	bool forwards /* false to do in reverse */
   );
   /* searches for itempath in all the data directory locations, and invokes the
-	specified action for each instance found. */
+	specified action for each instance found. Returns nonzero on error, or if action
+	returned nonzero. */
 
 char * xdg_find_cache_path
   (
 	const char * itempath,
 	bool create_if
   );
-  /* returns an expansion for itempath in the cache directory area. */
+  /* returns an expansion for itempath in the cache directory area. Caller must
+	dispose of the result pointer. */
