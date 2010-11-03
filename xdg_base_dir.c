@@ -13,7 +13,36 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #include "xdg_base_dir.h"
+
+/*
+	Useful stuff
+*/
+
+static void strconcat
+  (
+    char * dest,
+    size_t maxdestlen,
+    const char * src
+  )
+  /* appends null-terminated src onto dest, ensuring length of contents
+    of latter (including terminating null) do not exceed maxdestlen. */
+  {
+    const size_t destlen = strlen(dest);
+    size_t srclen = strlen(src);
+    assert(destlen < maxdestlen);
+    if (srclen > maxdestlen - 1 - destlen)
+      {
+        srclen = maxdestlen - 1 - destlen;
+      } /*if*/
+    memcpy(dest + destlen, src, srclen);
+    dest[destlen + srclen] = 0;
+  } /*strconcat*/
+
+/*
+	User-visible stuff
+*/
 
 int xdg_makedirsif
   (
@@ -78,9 +107,9 @@ char * xdg_make_home_relative
 		strncpy(result, home, result_len);
 		if (result[strlen(result) - 1] != '/')
 		  {
-			strncat(result, "/", result_len);
+			strconcat(result, result_len, "/");
 		  } /*if*/
-		strncat(result, path, result_len);
+		strconcat(result, result_len, path);
 	  }
 	while (false);
 	return
@@ -299,9 +328,9 @@ static int xdg_for_each_found
 			thispath[dirpath_len] = 0;
 			if (dirpath_len != 0 && dirpath[dirpath_len - 1] != '/')
 			  {
-				strncat(thispath, "/", thispath_maxlen);
+				strconcat(thispath, thispath_maxlen, "/");
 			  } /*if*/
-			strncat(thispath, itempath, thispath_maxlen);
+			strconcat(thispath, thispath_maxlen, itempath);
 			if (stat(thispath, &statinfo) == 0)
 			  {
 				status = action(thispath, actionarg);
@@ -473,9 +502,9 @@ char * xdg_find_cache_path
 			strncpy(result, cache_home, result_maxlen);
 			if (result[0] != '\0' && result[strlen(result) - 1] != '/')
 			  {
-				strncat(result, "/", result_maxlen);
+				strconcat(result, result_maxlen, "/");
 			  } /*if*/
-			strncat(result, itempath, result_maxlen);
+			strconcat(result, result_maxlen, itempath);
 			if (create_if && xdg_makedirsif(result) != 0)
 			  {
 				free(result);
