@@ -1,6 +1,7 @@
 #+
 # Implementation of the XDG Base Directory specification
-# <http://standards.freedesktop.org/basedir-spec/latest/>.
+# <http://standards.freedesktop.org/basedir-spec/latest/>
+# for Python 3.2.
 #
 # The routines in this module can be grouped into the following categories:
 # * find all config/data files:
@@ -28,9 +29,9 @@ import errno
 def makedirsif(path) :
 	"""creates all the directories in path, if they don't already exist."""
 	try :
-		os.makedirs(path, 0700)
-	except OSError, (ErrNo, Msg) :
-		if ErrNo != errno.EEXIST :
+		os.makedirs(path, 0o700)
+	except OSError as Err :
+		if Err.errno != errno.EEXIST :
 			raise
 		#end if
 	#end try
@@ -90,12 +91,9 @@ def find_first_config_path(path) :
 	paths_to_try = iter((get_config_home(),) + config_search_path())
 		# highest priority first
 	while True :
-		try :
-			this_path = paths_to_try.next()
-		except StopIteration :
-			this_path = None
+		this_path = next(paths_to_try, None)
+		if this_path == None :
 			break
-		#end try
 		this_path = os.path.join(this_path, path)
 		if os.path.exists(this_path) :
 			break
@@ -122,12 +120,9 @@ def find_first_data_path(path) :
 	paths_to_try = iter((get_data_home(),) + data_search_path())
 		# highest priority first
 	while True :
-		try :
-			this_path = paths_to_try.next()
-		except StopIteration :
-			this_path = None
+		this_path = next(paths_to_try, None)
+		if this_path == None :
 			break
-		#end try
 		this_path = os.path.join(this_path, path)
 		if os.path.exists(this_path) :
 			break
