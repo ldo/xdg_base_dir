@@ -1,7 +1,7 @@
 #+
 # Implementation of the XDG Base Directory specification
 # <http://standards.freedesktop.org/basedir-spec/latest/>
-# for Python 3.2.
+# for Python 3.
 #
 # The routines in this module can be grouped into the following categories:
 # * find all config/data files:
